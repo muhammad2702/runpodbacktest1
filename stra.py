@@ -69,8 +69,8 @@ def download_csv(url):
 def preprocess_data(data):
     data['Close'] = data['predicted_close_price']
     data['Open'] = data['last_actual_close']
-    data['High'] = data['Close']  # Placeholder
-    data['Low'] = data['Close']   # Placeholder
+    data['High'] = data['Close']
+    data['Low'] = data['Close']
     data['Date'] = pd.to_datetime(data['t'])
     data.set_index('Date', inplace=True)
     data = data[~data.index.duplicated(keep='first')]
@@ -101,8 +101,16 @@ def run_backtests(bt_data):
         bt = Backtest(bt_data, strategy, cash=10_000, commission=0.002)
         run_result = bt.run()
         run_result_dict = dict(run_result)
-        # Filter out only desired metrics
-        filtered_results = {k: run_result_dict.get(k) for k in desired_metrics if k in run_result_dict}
+        # Filter out only desired metrics and ensure values are serializable
+        filtered_results = {}
+        for k in desired_metrics:
+            if k in run_result_dict:
+                val = run_result_dict[k]
+                # Ensure numeric values are floats, and fallback to string if needed
+                if isinstance(val, (int, float)):
+                    filtered_results[k] = float(val)
+                else:
+                    filtered_results[k] = str(val)
         results[f"Strategy {i}"] = filtered_results
     return results
 

@@ -110,14 +110,19 @@ def handler(job):
 
     try:
         data = download_csv(csv_url)
+        print(data)
         bt_data = preprocess_data(data)
+        
         results = run_backtests(bt_data)
-        # Convert results to a serializable format
-        results_serializable = {k: v._trades.to_dict() for k, v in results.items()}
+        results_serializable = {}
+        for k, v in results.items():
+            trades_df = v._trades.copy()
+            trades_df['EntryTime'] = trades_df['EntryTime'].astype(str)
+            trades_df['ExitTime'] = trades_df['ExitTime'].astype(str)
+            results_serializable[k] = trades_df.to_dict(orient='records')
         return {"results": results_serializable}
     except Exception as e:
         return {"error": str(e)}
-
 runpod.serverless.start({"handler": handler})
 
 #if __name__ == "__main__":

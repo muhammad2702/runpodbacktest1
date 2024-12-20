@@ -22,6 +22,7 @@ class Strategy1(Strategy):
             )
         elif self.position:
             self.position.close()
+
 # Strategy 2: Buy for max gains, no stop loss, sell if prediction changes
 class Strategy2(Strategy):
     def init(self):
@@ -74,8 +75,6 @@ class Strategy5(Strategy):
                 sl=self.data.Close[-1] * (1 - self.stop_loss_ratio)
             )
 
-# Run backtests
-
 def download_csv(url):
     response = requests.get(url)
     response.raise_for_status()  # Ensure the request was successful
@@ -95,11 +94,30 @@ def preprocess_data(data):
     return data[['Open', 'High', 'Low', 'Close']]
 
 def run_backtests(bt_data):
-    strategies = [Strategy1]  # Add other strategies to this list
+    strategies = [Strategy1]  # Add other strategies if desired
     results = {}
     for i, strategy in enumerate(strategies, 1):
         bt = Backtest(bt_data, strategy, cash=10_000, commission=0.002)
-        results[f"Strategy {i}"] = bt.run()
+        run_result = bt.run()
+
+        # Convert run_result to a serializable dict, excluding non-serializable fields.
+        # run_result is a pandas Series-like object, we can convert it to dict directly.
+        result_dict = dict(run_result)
+        # Remove the '_trades' key to avoid serialization issues
+        if '_trades' in result_dict:
+            del result_dict['_trades']
+
+        # Ensure all keys are JSON-serializable by converting to str where needed
+        # (Most values should already be serializable floats, ints, or strings.)
+        for key, value in result_dict.items():
+            # Convert timestamps/durations to string if present
+            if pd.api.types.is_datetime64_any_dtype(type(value)):
+                result_dict[key] = str(value)
+            elif isinstance(value, pd.Timedelta):
+                result_dict[key] = str(value)
+
+        results[f"Strategy {i}"] = result_dict
+
     return results
 
 def handler(job):
@@ -114,22 +132,8 @@ def handler(job):
         bt_data = preprocess_data(data)
         
         results = run_backtests(bt_data)
-        results_serializable = {}
-        for k, v in results.items():
-            trades_df = v._trades.copy()
-            trades_df['EntryTime'] = trades_df['EntryTime'].astype(str)
-            trades_df['ExitTime'] = trades_df['ExitTime'].astype(str)
-            results_serializable[k] = trades_df.to_dict(orient='records')
-        return {"results": results_serializable}
+        return {"results": results}
     except Exception as e:
         return {"error": str(e)}
-runpod.serverless.start({"handler": handler})
 
-#if __name__ == "__main__":
-#    test_job = {
-#        'input': {
-#            'csv_url': 'https://example.com/path/to/your/all_latest_predictions.csv'
-#        }
-#    }
- #   result = handler(test_job)
- #   print(result)
+runpod.serverless.start({"handler": handler})

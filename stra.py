@@ -123,6 +123,11 @@ def handler(job):
     data = download_csv(csv_url)
     bt_data = preprocess_data(data)
     results = run_backtests(bt_data)
-    return {"results": results}
+    results_dict = {   "status": "success",
+    "message": "",
+    "details": {} }
+    results_dict["details"] = results
+
+     return json.dumps(results_dict)
 
 runpod.serverless.start({"handler": handler})

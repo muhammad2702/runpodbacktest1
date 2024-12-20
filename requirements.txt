@@ -1,0 +1,5 @@
+runpod
+requests
+pandas
+numpy
+backtesting

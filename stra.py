@@ -120,13 +120,9 @@ def handler(job):
 
     if not csv_url:
         return {"error": "No CSV URL provided in input payload."}
-
-    try:
-        data = download_csv(csv_url)
-        bt_data = preprocess_data(data)
-        results = run_backtests(bt_data)
-        return {"results": results}
-    except Exception as e:
-        return {"error": str(e)}
+    data = download_csv(csv_url)
+    bt_data = preprocess_data(data)
+    results = run_backtests(bt_data)
+    return {"results": results}
 
 runpod.serverless.start({"handler": handler})

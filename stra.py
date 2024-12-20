@@ -3,7 +3,7 @@ import requests
 from io import StringIO
 from backtesting import Backtest, Strategy
 import runpod
-
+import json
 # Define Strategies
 class Strategy1(Strategy):
     take_profit_ratio = 0.05

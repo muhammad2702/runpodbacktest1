@@ -127,7 +127,7 @@ def handler(job):
     "message": "",
     "details": {} }
     results_dict["details"] = results
-
-     return json.dumps(results_dict)
+    
+    return json.dumps(results_dict)
 
 runpod.serverless.start({"handler": handler})
